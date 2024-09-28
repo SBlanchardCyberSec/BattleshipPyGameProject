@@ -26,9 +26,13 @@ class Rotation(Enum):
         return Rotation((self.value - 1) % 4)
 
 
-def gameLoop (player: BattleshipPlayer.Player):
+def gameLoop (player: BattleshipPlayer.Player, aiplayer: BattleshipPlayer.Player, aishootcoords: list):
 
-    while(not player.victory):
+    while(not player.victory and not aiplayer.victory):
+
+        print(aiplayer.board)
+
+        print("====== Remaining Health: {} ======".format(aiplayer.health))
 
         print(player.board)
 
@@ -36,18 +40,34 @@ def gameLoop (player: BattleshipPlayer.Player):
 
         getInput(player)
 
+        if not player.victory:
+            if len(aishootcoords) > 0:
+                aiPlayerShoot(aiplayer, aishootcoords)
+            else:
+                print("AI Player has shot every cell in the board but hasn't won yet. Congrats on finding this easter egg.")
+                aiplayer.victory = True
+
 
 def getInput(player):
-    x = int(input("Enter the Row (vertical axis) to shoot. (-1 to exit and 15 to enable debug printing)"))
-    y = int(input("Enter the Column (horizontal axis) to shoot. (-1 to exit and 15 to enable debug printing)"))
 
-    if x == 15 and y == 15:
+    test = input("Enter the space to shoot. Format it like D9(K to exit and L to debug AI Board and M to Debug your Board)")
+
+    if len(test) == 1:
+        x = 1 #test for quitting
+    else:
+        x = int(test[1:]) - 1 #valid values 0-9
+    #A is 65
+    y = ord(test[:1].upper()) - 65 #vaild values 0-9, 10, 11, 12
+
+    if y == 12:
         #debug
         debug(player)
-    elif x == -1 or y == -1:
+    elif y == 11:
+        debug(aiplayer)
+    elif y == 10:
         #quit
         player.victory = True
-    elif x < -1 or x > 9 or y < -1 or y > 9:
+    elif x < 0 or x > 9 or y < 0 or y > 12:
         #out of bounds
         print("Invalid coords entered!")
     else:
@@ -56,6 +76,18 @@ def getInput(player):
 def shoot(x, y, player):
     player.board.shootCell(x, y)
     player.updateHealth()
+
+def aiPlayerShoot(aiplayer: BattleshipPlayer.Player, aishootcoords: list):
+    (x, y) = aiPlayerRandomShot(aishootcoords)
+    aiplayer.board.shootCell(x, y)
+    aiplayer.updateHealth()
+
+def aiPlayerRandomShot(aishootcoords: list) -> tuple:
+    (x,y) = random.choice(aishootcoords)
+    #print ("AI Randomly Shoots ({}, {})".format(x, y))
+    aishootcoords.remove((x, y))
+    #print ("Size of AI Shoot Coords is now : {}".format(len(aishootcoords)))
+    return (x, y)
 
 
 def debug(player):
@@ -67,40 +99,29 @@ def debug(player):
 
 if __name__ == '__main__':
     #do stuff
-    #coords = np.array([np.array([(i, j) for i in range(10)], dtype="i,i") for j in range(10)])
-    #print(coords)
+    #aishootcoords = np.array([np.array([(i, j) for i in range(10)], dtype="i,i") for j in range(10)])
+    aishootcoords = []
+    for x in range(10):
+        for y in range(10):
+            aishootcoords.append((x, y))
+
+    #print(aishootcoords)
     #print(coords[1,3])
+
+    #aishootcoords.remove((1,1))
+
+    #aishootcoords = np.delete(aishootcoords, np.where(aishootcoords == (1,1)))
+
+    print(aishootcoords)
 
     player = BattleshipPlayer.Player()
 
     player.updateHealth()
 
-    gameLoop(player)
+    aiplayer = BattleshipPlayer.Player()
 
+    aiplayer.board.aiplayer = True
 
+    aiplayer.updateHealth()
 
-
-    #ship = BattleshipShip.Ship(3, 3, 'Submarine', Rotation.RIGHT)
-    #board = BattleshipBoard.Board()
-    #cellrange = BattleshipBoard.CellRange(1, 1, ship.rotation, ship, board)
-
-    #ship2 = BattleshipShip.Ship(3, 3, 'Destroyer', Rotation.DOWN)
-    #cellrange2 = BattleshipBoard.CellRange(4, 0, ship2.rotation, ship2, board)
-
-
-    #print(board)
-
-    #for row in board.cells:
-    #   print (row)
-
-    #print ("Debug now")
-
-    #board.enableDebugView()
-
-    #print(board)
-    #for row in board.cells:
-    #    print (row)
-    
-    #print(cellrange)
-    #print(cellrange2)
-    #print(cellrange.checkCollision(cellrange2))
+    gameLoop(player, aiplayer, aishootcoords)

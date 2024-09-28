@@ -19,6 +19,7 @@ class Board:
         self.health = 0
         self.ships = []
         self.extraships = extraships
+        self.aiplayer =False
 
         self.emptycells = []
         for x in range(self.size):
@@ -106,12 +107,18 @@ class Board:
                         flag = True
                         tempship = ship
 
-                        print("You sank the enemy {}!".format(ship.model))
+                        if not self.aiplayer:
+                            print("You sank the enemy {}!".format(ship.model))
+                        else:
+                            print("The AI sank your {}!".format(ship.model))
                         ship.cellrange.coords.remove(coord)
                         
 
                     else:
-                        print("You hit the enemy {}!".format(ship.model))
+                        if not self.aiplayer:
+                            print("You hit the enemy {}!".format(ship.model))
+                        else:
+                            print("The AI hit your {}!".format(ship.model))
                         ship.cellrange.coords.remove(coord)
 
 
@@ -140,19 +147,28 @@ class Board:
 
         result = ""
         x = 0
-        result += "  "
+        
+        #for x in range(10):
+        #    result += " {} ".format(x)
+        #result += "\n"
+        #x = 0
+        result += "   "
         #ASCII A = 65
         for x in range(10):
-            result += " {} ".format(x)
+            result += " {} ".format(chr(x+65))
         result += "\n"
-        x = 0
+        x = 1
 
         for row in self.cells:
             result += "{} ".format(x)
+            if x < 10:
+                result += " " #adding additional space for 10 (due to there being an extra digit)
             for col in row:
                 result += str(col)
             result += "\n"
             x += 1
+
+        
         
         return result
 
@@ -184,19 +200,19 @@ class CellRange:
 
     def createRangeUp(self, startx, starty, ship: BattleshipShip.Ship):
         for x in range(self.ship.length):
-            self.coords.append((startx, starty - x))
+            self.coords.append((startx - x, starty))
 
     def createRangeRight(self, startx, starty, ship: BattleshipShip.Ship):
         for x in range(self.ship.length):
-            self.coords.append((startx + x, starty))
+            self.coords.append((startx, starty + x))
 
     def createRangeDown(self, startx, starty, ship: BattleshipShip.Ship):
         for x in range(self.ship.length):
-            self.coords.append((startx, starty + x))
+            self.coords.append((startx + x, starty))
 
     def createRangeLeft(self, startx, starty, ship: BattleshipShip.Ship):
         for x in range(self.ship.length):
-            self.coords.append((startx - x, starty))
+            self.coords.append((startx, starty - x))
 
     def checkCollision(self, range2: CellRange) -> bool:
         #check somments at top import statement for type hinting here
