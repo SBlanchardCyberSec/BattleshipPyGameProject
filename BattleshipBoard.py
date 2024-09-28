@@ -1,25 +1,37 @@
 from __future__ import annotations
 #this is for a forward reference issue on checkCollision method (thanks PEP 563)
 #PEP 673 adds a better way in Python 3.11 (but my venv is 3.10)
-import BattleshipApp
-#TODO fix circular dependancy (perhaps merge into one file)
-import BattleshipShip
-#TODO fix circular dependancy 2
 
+import BattleshipShip
+import BattleshipApp
+import pygame
 import random
 import numpy as np
 import pandas as pd
 
 class Board:
 
-    def __init__(self, size=10, extraships=[]):
+    def __init__(self, size=10):
         self.size = size
         self.cells = [[Cell("None") for i in range(self.size)] for y in range(self.size)]
+
+        x = 0
+        y = 0
+        for row in self.cells:
+            for cell in row:
+                cell.x = y
+                cell.y = x
+                x += 1
+            x = 0
+            y += 1
+        x = 0
+        y = 0
+
+
         #coords = np.array([np.array([(i, j) for i in x_grid], dtype="i,i") for j in y_grid])
         self.health = 0
         self.ships = []
-        self.extraships = extraships
-        self.aiplayer =False
+        self.aiplayer = False
 
         self.emptycells = []
         for x in range(self.size):
@@ -75,7 +87,7 @@ class Board:
         if not flag:
             for cr in self.filledcells:
                 if temprange.checkCollision(cr):
-                    print ("Collision while placing ship {} and range: {}".format(model, temprange))
+                    #print ("Collision while placing ship {} and range: {}".format(model, temprange))
                     flag = True
 
             if not flag:
@@ -84,7 +96,7 @@ class Board:
                 self.ships.append(tempship)
                 self.health += length
                 for coord in temprange.coords:
-                    self.cells[coord[0]][coord[1]].containsShip = True
+                    self.cells[coord[0]][coord[1]].containsship = True
                     self.cells[coord[0]][coord[1]].ship = model
 
             else:
@@ -93,9 +105,10 @@ class Board:
             self.genShip(rotation, length, model)
 
 
-    def shootCell(self, x, y):
+    def shootCell(self, x, y) -> str:
         flag = False
         tempship = 0
+        result = ""
 
         for ship in self.ships:
             for coord in ship.cellrange.coords:
@@ -107,19 +120,21 @@ class Board:
                         flag = True
                         tempship = ship
 
+                        #ship.cellrange.coords.remove(coord)
                         if not self.aiplayer:
-                            print("You sank the enemy {}!".format(ship.model))
+                            result = "You sank the enemy {}!".format(ship.model)
                         else:
-                            print("The AI sank your {}!".format(ship.model))
-                        ship.cellrange.coords.remove(coord)
+                            result = "The AI sank your {}!".format(ship.model)
+                        
                         
 
                     else:
+                        #ship.cellrange.coords.remove(coord)
                         if not self.aiplayer:
-                            print("You hit the enemy {}!".format(ship.model))
+                            result = "You hit the enemy {}!".format(ship.model)
                         else:
-                            print("The AI hit your {}!".format(ship.model))
-                        ship.cellrange.coords.remove(coord)
+                            result = "The AI hit your {}!".format(ship.model)
+                        
 
 
 
@@ -127,7 +142,12 @@ class Board:
         self.cells[x][y].hitCell()
 
         if flag:
+            for coord in tempship.cellrange.coords:
+                self.cells[coord[0]][coord[1]].sankship = True
+
             self.ships.remove(tempship)
+
+        return result
 
 
         
@@ -223,34 +243,37 @@ class CellRange:
         return False
 
     def __repr__(self):
-        return "CellRange: startx: {}, starty: {}, coords: {}, rotation: {}, ship: {}".format(self.startx, self.starty, self.coords, self.rotation, self.ship)
+        return "CellRange: startx: {}, starty: {}, coords: {}, rotation: {}, ship: {}".format(self.startx, self.starty, self.coords, self.rotation, self.ship.model)
 
 
 
 
 class Cell:
 
-    def __init__(self, ship, containsShip: bool=False, discovered: bool=False, sankShip: bool=False, hitable: bool=True, debug: bool=False):
+    def __init__(self, ship, containsship: bool=False, discovered: bool=False, sankShip: bool=False, hitable: bool=True, debug: bool=False):
         #
         self.ship = ship
-        self.containsShip = False
+        self.containsship = False
         self.discovered = False
-        self.sankShip = False
+        self.sankship = False
         self.hitable = True
         self.debug = False
+        self.rect = pygame.rect.Rect(0,0,0,0)
+        self.x = 0
+        self.y = 0
 
     def hitCell(self):
         self.discovered = True
         self.hitable = False
-        return self.containsShip
+        return self.containsship
 
     def __repr__(self):
         if self.debug:
-            if self.sankShip:
+            if self.sankship:
                 return " * " #already sank ship
-            elif self.containsShip and self.hitable:
+            elif self.containsship and self.hitable:
                 return " {} ".format(self.ship[0]) #not hit yet but visible to debug
-            elif self.containsShip:
+            elif self.containsship:
                 return " X " #has been hit
             else:
                 if self.hitable:
@@ -259,9 +282,9 @@ class Cell:
                     return " 0 " #empty and already hit
 
         elif self.discovered:
-            if (self.sankShip):
+            if (self.sankship):
                 return " * "
-            elif (self.containsShip and not self.sankShip):
+            elif (self.containsship):
                 return " X "
             else:
                 return " 0 "
