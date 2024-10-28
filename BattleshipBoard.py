@@ -105,7 +105,7 @@ class Board:
             self.genShip(rotation, length, model)
 
 
-    def shootCell(self, x, y) -> str:
+    def shootCell(self, x, y) -> Tuple[str, BattleshipShip.Ship]:
         flag = False
         tempship = 0
         result = ""
@@ -147,7 +147,7 @@ class Board:
 
             self.ships.remove(tempship)
 
-        return result
+        return (result, tempship)
 
 
         
